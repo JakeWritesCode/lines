@@ -26,6 +26,7 @@ if the right use-case comes up.
 
 In addition to this, I'm going to solve some common problems and handle some of the 'gubbins' that goes into 
 building a production grade app:
+- Logging
 - Auth, using JWT's for API calls.
 - Observability, using Datadog and Sentry to help us to see what our app is doing.
 - Containerisation, for easy deployment.

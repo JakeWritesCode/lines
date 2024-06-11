@@ -1,6 +1,7 @@
 package internal
 
-type Config struct {
+// MainConfig is the main configuration struct for the whole monolith.
+type MainConfig struct {
 	LocalDev    bool
 	TestRunner  bool
 	UseSSL      bool
@@ -11,11 +12,12 @@ type Config struct {
 	SentryDSN   string
 }
 
-func NewConfig() *Config {
+// NewConfig creates a new MainConfig struct, reading from environment variables.
+func NewConfig() *MainConfig {
 	localDev := GetEnvOrDefault("LOCAL_DEV", "true", "bool").(bool)
 	testRunner := GetEnvOrDefault("TEST_RUNNER", "false", "bool").(bool)
 	useSSL := GetEnvOrDefault("USE_SSL", "false", "bool").(bool)
-	config := &Config{
+	config := &MainConfig{
 		LocalDev:    localDev,
 		TestRunner:  testRunner,
 		UseSSL:      useSSL && !localDev,

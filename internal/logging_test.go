@@ -32,7 +32,10 @@ func TestNewLogrusHandler_FailedLevelParse(t *testing.T) {
 }
 
 func TestNewStructuredLog(t *testing.T) {
-	testLog := NewStructuredLog("test", "test message")
+	testLog := NewStructuredLog("app", "test", "test message")
+	if testLog.AppName != "app" {
+		t.Error("Expected test log app name to be set, but it was not")
+	}
 	if testLog.Caller != "test" {
 		t.Error("Expected test log caller to be set, but it was not")
 	}
@@ -49,11 +52,14 @@ func TestLogrusHandler_Info(t *testing.T) {
 	logrusHandler := NewLogrusHandler("debug")
 	logrusHandler.Logrus.Out = &buf
 
-	testLog := NewStructuredLog("TestInfo", "This is a test log")
-	logrusHandler.Info(testLog)
+	logrusHandler.Info(
+		"test",
+		"TestInfo",
+		"This is a test log",
+	)
 
 	logOutput := buf.String()
-	expected := `{"caller":"TestInfo","level":"info","message":"This is a test log","msg":"","time":"`
+	expected := `{"app_name":"test","caller":"TestInfo","level":"info","message":"This is a test log","msg":"","time":"`
 	if len(logOutput) < len(expected) || logOutput[:len(expected)] != expected {
 		t.Errorf("\n  output:  %s\nexpected: %s\n", logOutput, expected)
 	}
@@ -64,11 +70,10 @@ func TestLogrusHandler_Error(t *testing.T) {
 	logrusHandler := NewLogrusHandler("debug")
 	logrusHandler.Logrus.Out = &buf
 
-	testLog := NewStructuredLog("TestError", "This is a test log")
-	logrusHandler.Error(testLog)
+	logrusHandler.Error("TestApp", "TestError", "This is a test log")
 
 	logOutput := buf.String()
-	expected := `{"caller":"TestError","level":"error","message":"This is a test log","msg":"","time":"`
+	expected := `{"app_name":"TestApp","caller":"TestError","level":"error","message":"This is a test log","msg":"","time":"`
 	if len(logOutput) < len(expected) || logOutput[:len(expected)] != expected {
 		t.Errorf("\n  output:  %s\nexpected: %s\n", logOutput, expected)
 	}
@@ -79,11 +84,10 @@ func TestLogrusHandler_Warn(t *testing.T) {
 	logrusHandler := NewLogrusHandler("debug")
 	logrusHandler.Logrus.Out = &buf
 
-	testLog := NewStructuredLog("TestWarn", "This is a test log")
-	logrusHandler.Warn(testLog)
+	logrusHandler.Warn("TestApp", "TestWarn", "This is a test log")
 
 	logOutput := buf.String()
-	expected := `{"caller":"TestWarn","level":"warning","message":"This is a test log","msg":"","time":"`
+	expected := `{"app_name":"TestApp","caller":"TestWarn","level":"warning","message":"This is a test log","msg":"","time":"`
 	if len(logOutput) < len(expected) || logOutput[:len(expected)] != expected {
 		t.Errorf("\n  output:  %s\nexpected: %s\n", logOutput, expected)
 	}
@@ -94,11 +98,10 @@ func TestLogrusHandler_Debug(t *testing.T) {
 	logrusHandler := NewLogrusHandler("debug")
 	logrusHandler.Logrus.Out = &buf
 
-	testLog := NewStructuredLog("TestDebug", "This is a test log")
-	logrusHandler.Debug(testLog)
+	logrusHandler.Debug("TestApp", "TestDebug", "This is a test log")
 
 	logOutput := buf.String()
-	expected := `{"caller":"TestDebug","level":"debug","message":"This is a test log","msg":"","time":"`
+	expected := `{"app_name":"TestApp","caller":"TestDebug","level":"debug","message":"This is a test log","msg":"","time":"`
 	if len(logOutput) < len(expected) || logOutput[:len(expected)] != expected {
 		t.Errorf("\n  output:  %s\nexpected: %s\n", logOutput, expected)
 	}
@@ -110,81 +113,10 @@ func TestLogrusHandler_Fatal(t *testing.T) {
 	logrusHandler.Logrus.Out = &buf
 	logrusHandler.Logrus.ExitFunc = func(int) {}
 
-	testLog := NewStructuredLog("TestFatal", "This is a test log")
-	logrusHandler.Fatal(testLog)
+	logrusHandler.Fatal("TestApp", "TestFatal", "This is a test log")
 
 	logOutput := buf.String()
-	expected := `{"caller":"TestFatal","level":"fatal","message":"This is a test log","msg":"","time":"`
-	if len(logOutput) < len(expected) || logOutput[:len(expected)] != expected {
-		t.Errorf("\n  output:  %s\nexpected: %s\n", logOutput, expected)
-	}
-}
-
-func TestLogrusHandler_EmitLog_Info(t *testing.T) {
-	var buf bytes.Buffer
-	logrusHandler := NewLogrusHandler("debug")
-	logrusHandler.Logrus.Out = &buf
-
-	logrusHandler.EmitLog("info", "TestInfo", "This is a test log")
-
-	logOutput := buf.String()
-	expected := `{"caller":"TestInfo","level":"info","message":"This is a test log","msg":"","time":"`
-	if len(logOutput) < len(expected) || logOutput[:len(expected)] != expected {
-		t.Errorf("\n  output:  %s\nexpected: %s\n", logOutput, expected)
-	}
-}
-
-func TestLogrusHandler_EmitLog_Error(t *testing.T) {
-	var buf bytes.Buffer
-	logrusHandler := NewLogrusHandler("debug")
-	logrusHandler.Logrus.Out = &buf
-
-	logrusHandler.EmitLog("error", "TestError", "This is a test log")
-
-	logOutput := buf.String()
-	expected := `{"caller":"TestError","level":"error","message":"This is a test log","msg":"","time":"`
-	if len(logOutput) < len(expected) || logOutput[:len(expected)] != expected {
-		t.Errorf("\n  output:  %s\nexpected: %s\n", logOutput, expected)
-	}
-}
-
-func TestLogrusHandler_EmitLog_Warn(t *testing.T) {
-	var buf bytes.Buffer
-	logrusHandler := NewLogrusHandler("debug")
-	logrusHandler.Logrus.Out = &buf
-
-	logrusHandler.EmitLog("warn", "TestWarn", "This is a test log")
-
-	logOutput := buf.String()
-	expected := `{"caller":"TestWarn","level":"warning","message":"This is a test log","msg":"","time":"`
-	if len(logOutput) < len(expected) || logOutput[:len(expected)] != expected {
-		t.Errorf("\n  output:  %s\nexpected: %s\n", logOutput, expected)
-	}
-}
-
-func TestLogrusHandler_EmitLog_Debug(t *testing.T) {
-	var buf bytes.Buffer
-	logrusHandler := NewLogrusHandler("debug")
-	logrusHandler.Logrus.Out = &buf
-
-	logrusHandler.EmitLog("debug", "TestDebug", "This is a test log")
-
-	logOutput := buf.String()
-	expected := `{"caller":"TestDebug","level":"debug","message":"This is a test log","msg":"","time":"`
-	if len(logOutput) < len(expected) || logOutput[:len(expected)] != expected {
-		t.Errorf("\n  output:  %s\nexpected: %s\n", logOutput, expected)
-	}
-}
-
-func TestLogrusHandler_EmitLog_Default(t *testing.T) {
-	var buf bytes.Buffer
-	logrusHandler := NewLogrusHandler("debug")
-	logrusHandler.Logrus.Out = &buf
-
-	logrusHandler.EmitLog("invalid", "TestDefault", "This is a test log")
-
-	logOutput := buf.String()
-	expected := `{"caller":"TestDefault","level":"info","message":"This is a test log","msg":"","time":"`
+	expected := `{"app_name":"TestApp","caller":"TestFatal","level":"fatal","message":"This is a test log","msg":"","time":"`
 	if len(logOutput) < len(expected) || logOutput[:len(expected)] != expected {
 		t.Errorf("\n  output:  %s\nexpected: %s\n", logOutput, expected)
 	}

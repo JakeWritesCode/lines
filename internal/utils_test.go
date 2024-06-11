@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 )
@@ -108,4 +109,21 @@ func TestGetEnvOrDefault_Slice_Default(t *testing.T) {
 	if len(test.([]string)) != 0 {
 		t.Error("Expected 0, got", len(test.([]string)))
 	}
+}
+
+func TestRedisConnStringSplitter(t *testing.T) {
+	testString := "redis://:password@localhost:6379/0"
+	url, password := RedisConnStringSplitter(testString)
+	assert.Equal(t, "localhost:6379/0", url)
+	assert.Equal(t, "password", password)
+}
+
+func TestGeneratePostgresConnString(t *testing.T) {
+	url := "localhost"
+	username := "test"
+	password := "password"
+	dbName := "test"
+	port := "5432"
+	connString := GeneratePostgresConnString(url, username, password, dbName, port)
+	assert.Equal(t, "host=localhost user=test password=password dbname=test port=5432 sslmode=disable", connString)
 }
