@@ -7,7 +7,7 @@ import (
 )
 
 // CreateEngine creates a new gin engine and sorts CORS out.
-func CreateEngine(config internal.MainConfig) *gin.Engine {
+func CreateEngine(config *internal.MainConfig) *gin.Engine {
 	r := gin.Default()
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = config.CORSOrigins

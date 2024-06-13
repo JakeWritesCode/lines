@@ -10,6 +10,7 @@ type MainConfig struct {
 	Logger      Logger
 	CORSOrigins []string
 	SentryDSN   string
+	HTTPPort    int
 }
 
 // NewConfig creates a new MainConfig struct, reading from environment variables.
@@ -23,8 +24,9 @@ func NewConfig() *MainConfig {
 		UseSSL:      useSSL && !localDev,
 		SiteDomain:  GetEnvOrDefault("SITE_DOMAIN", "localhost", "string").(string),
 		LogLevel:    GetEnvOrDefault("LOG_LEVEL", "info", "string").(string),
-		CORSOrigins: GetEnvOrDefault("CORS_ORIGINS", "", "[]string").([]string),
+		CORSOrigins: GetEnvOrDefault("CORS_ORIGINS", "http://localhost", "[]string").([]string),
 		SentryDSN:   GetEnvOrDefault("SENTRY_DSN", "", "string").(string),
+		HTTPPort:    GetEnvOrDefault("HTTP_PORT", "8080", "int").(int),
 	}
 	config.Logger = NewLogrusHandler(config.LogLevel)
 	return config
