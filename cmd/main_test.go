@@ -5,6 +5,7 @@ import (
 	"lines/internal"
 	"lines/lines/app"
 	"lines/lines/http"
+	"lines/lines/logging"
 	"testing"
 )
 
@@ -80,7 +81,7 @@ func (m *mockAppWithInitialiseError) Initialise(config *internal.MainConfig) err
 }
 
 type MockLogger struct {
-	*internal.LogrusHandler
+	*logging.LogrusHandler
 	FatalCalls int
 }
 
