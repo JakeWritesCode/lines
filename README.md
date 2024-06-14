@@ -23,6 +23,8 @@ if the right use-case comes up.
   - A service layer, this is where our business logic lives. We ingest data, orchestrate our data stores to perform 
   some sort of action and send data back out as egress.
   - A store layer, which handles our database operations.
+  - The overall idea is that we initialise a top level app, and that in turn cascades down with each app initialising
+  it's own dependencies. This makes testing and spearation of concerns easy.
 
 In addition to this, I'm going to solve some common problems and handle some of the 'gubbins' that goes into 
 building a production grade app:
@@ -31,3 +33,4 @@ building a production grade app:
 - Observability, using Datadog and Sentry to help us to see what our app is doing.
 - Containerisation, for easy deployment.
 - An admin console, for administering the app.
+- All the boring boilerplate for creating endpoints, serialisers etc that Django does for you.
