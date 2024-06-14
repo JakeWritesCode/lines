@@ -11,23 +11,31 @@ import (
 // CreatePostgresDBConfig creates a new PostgresDBConfig instance.
 func CreatePostgresDBConfig(AppName string) *PostgresDBConfig {
 	logLevel := utils.GetEnvOrDefault("LOG_LEVEL", "info", "string").(string)
+	testRunner := utils.GetEnvOrDefault("TEST_RUNNER", "false", "bool").(bool)
 	logger := logging.NewLogrusHandler(logLevel)
+	dbName := ""
+	if testRunner {
+		dbName = fmt.Sprintf("%v_POSTGRES_URL_TEST", AppName)
+	} else {
+		dbName = fmt.Sprintf("%v_POSTGRES_URL", AppName)
+	}
 	connString := utils.GetEnvOrDefault(
-		fmt.Sprintf("%v_POSTGRES_URL", AppName),
-		"info",
+		dbName,
+		"NODEFAULT",
 		"string",
 	).(string)
 	return &PostgresDBConfig{
 		Logger:           logger,
 		ConnectionString: connString,
 		AppName:          AppName,
+		TestRunner:       testRunner,
 	}
 }
 
 // CreatePostgresDB creates a new PostgresDB instance.
 // It connects to the database using the provided configuration.
 // It also migrates the provided models to the database.
-func CreatePostgresDB(config PostgresDBConfig, models []PostgresModel) *PostgresStore {
+func CreatePostgresDB(config PostgresDBConfig, models []PostgresModel) *gorm.DB {
 	db, err := gorm.Open(postgres.Open(config.ConnectionString), &gorm.Config{})
 	if err != nil {
 		config.Logger.Fatal(
@@ -46,8 +54,5 @@ func CreatePostgresDB(config PostgresDBConfig, models []PostgresModel) *Postgres
 			)
 		}
 	}
-	return &PostgresStore{
-		Config:   config,
-		Postgres: db,
-	}
+	return db
 }

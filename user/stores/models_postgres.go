@@ -12,7 +12,7 @@ type User struct {
 	Password string
 }
 
-func (u *User) Validate() []store.ModelValidationError {
+func (u User) Validate() []store.ModelValidationError {
 	var errors []store.ModelValidationError
 	// TODO: Find a way to create generic validation functions
 	if u.Name == "" {

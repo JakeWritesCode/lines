@@ -1,7 +1,5 @@
 package stores
 
-import "lines/lines/store"
-
 type UserStoreInterface interface {
 	*UserPostgresStoreInterface
 }
@@ -12,10 +10,6 @@ type UserStore struct {
 
 func NewUserStore() *UserStore {
 	return &UserStore{
-		UserPostgresStore: NewUserPostgresStore(
-			[]store.PostgresModel{
-				&User{},
-			},
-		),
+		UserPostgresStore: NewUserPostgresStore(),
 	}
 }
