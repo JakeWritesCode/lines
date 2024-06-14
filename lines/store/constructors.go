@@ -27,7 +27,7 @@ func CreatePostgresDBConfig(AppName string) *PostgresDBConfig {
 // CreatePostgresDB creates a new PostgresDB instance.
 // It connects to the database using the provided configuration.
 // It also migrates the provided models to the database.
-func CreatePostgresDB(config PostgresDBConfig, models []gorm.Model) *PostgresDB {
+func CreatePostgresDB(config PostgresDBConfig, models []PostgresModel) *PostgresStore {
 	db, err := gorm.Open(postgres.Open(config.ConnectionString), &gorm.Config{})
 	if err != nil {
 		config.Logger.Fatal(
@@ -46,8 +46,8 @@ func CreatePostgresDB(config PostgresDBConfig, models []gorm.Model) *PostgresDB 
 			)
 		}
 	}
-	return &PostgresDB{
-		config: config,
-		DB:     db,
+	return &PostgresStore{
+		Config:   config,
+		Postgres: db,
 	}
 }

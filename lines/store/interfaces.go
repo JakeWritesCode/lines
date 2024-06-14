@@ -12,13 +12,17 @@ type PostgresDBConfig struct {
 	AppName          string
 }
 
-// PostgresDB is a PostgresDB.
-type PostgresDB struct {
-	config PostgresDBConfig
-	DB     *gorm.DB
-}
-
 // PostgresStore is a struct that contains an initialized PostgresDB instance.
 type PostgresStore struct {
-	Postgres *PostgresDB
+	Postgres *gorm.DB
+	Config   PostgresDBConfig
+}
+
+type ModelValidationError struct {
+	Field   string
+	Message string
+}
+
+type PostgresModel interface {
+	Validate() []ModelValidationError
 }
