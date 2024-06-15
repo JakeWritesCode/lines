@@ -16,9 +16,7 @@ type UserPostgresStoreInterface interface {
 // UserPostgresStore is a struct that contains an initialized PostgresStore instance.
 type UserPostgresStore struct {
 	*store.PostgresStore
-	Postgres store.GormInstanceInterface
-	Logger   logging.Logger
-	Config   store.PostgresDBConfig
+	Logger logging.Logger
 }
 
 func (s *UserPostgresStore) Models() []store.PostgresModel {
@@ -31,11 +29,11 @@ func (s *UserPostgresStore) Models() []store.PostgresModel {
 func NewUserPostgresStore() *UserPostgresStore {
 	appName := "USER"
 	config := store.CreatePostgresDBConfig(appName)
-	postgresStore := &UserPostgresStore{}
-	db := store.CreatePostgresDB(*config, postgresStore.Models())
-	return &UserPostgresStore{
-		Postgres: db,
-		Logger:   config.Logger,
+	userPostgresStore := &UserPostgresStore{}
+	db := store.CreatePostgresDB(*config, userPostgresStore.Models())
+	userPostgresStore.PostgresStore = &store.PostgresStore{
 		Config:   *config,
+		Postgres: db,
 	}
+	return userPostgresStore
 }

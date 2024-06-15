@@ -7,9 +7,9 @@ import (
 )
 
 func TestUserPostgresStore_CreateUser(t *testing.T) {
-
 	pgStore := NewUserPostgresStore()
-	store.IsolatedIntegrationTest(t, []store.IntegrationTestStore{pgStore}, func(t *testing.T) {
+	stores := []store.IntegrationTestStore{pgStore}
+	store.IsolatedIntegrationTest(t, stores, func(t *testing.T) {
 		user := User{
 			Name:     "Test User",
 			Email:    "some@email.com",
@@ -25,5 +25,96 @@ func TestUserPostgresStore_CreateUser(t *testing.T) {
 		assert.Equal(t, user.Name, dbUser.Name)
 		assert.Equal(t, user.Email, dbUser.Email)
 		assert.Equal(t, user.Password, dbUser.Password)
+	})
+}
+
+func TestUserPostgresStore_GetUserByEmail(t *testing.T) {
+	pgStore := NewUserPostgresStore()
+	stores := []store.IntegrationTestStore{pgStore}
+	store.IsolatedIntegrationTest(t, stores, func(t *testing.T) {
+		user := User{
+			Name:     "Test User",
+			Email:    "some@email.com",
+			Password: "password",
+		}
+		validationErrors, err := pgStore.CreateUser(&user)
+		assert.Nil(t, err)
+		assert.Empty(t, validationErrors)
+		assert.NotEqual(t, uint(0), user.ID)
+		dbUser, err := pgStore.GetUserByEmail(user.Email)
+		assert.Nil(t, err)
+		assert.Equal(t, user.ID, dbUser.ID)
+		assert.Equal(t, user.Name, dbUser.Name)
+		assert.Equal(t, user.Email, dbUser.Email)
+		assert.Equal(t, user.Password, dbUser.Password)
+	})
+}
+
+func TestUserPostgresStore_GetUserByID(t *testing.T) {
+	pgStore := NewUserPostgresStore()
+	stores := []store.IntegrationTestStore{pgStore}
+	store.IsolatedIntegrationTest(t, stores, func(t *testing.T) {
+		user := User{
+			Name:     "Test User",
+			Email:    "some@email.com",
+			Password: "password",
+		}
+		validationErrors, err := pgStore.CreateUser(&user)
+		assert.Nil(t, err)
+		assert.Empty(t, validationErrors)
+		assert.NotEqual(t, uint(0), user.ID)
+		dbUser, err := pgStore.GetUserByID(user.ID)
+		assert.Nil(t, err)
+		assert.Equal(t, user.ID, dbUser.ID)
+		assert.Equal(t, user.Name, dbUser.Name)
+		assert.Equal(t, user.Email, dbUser.Email)
+		assert.Equal(t, user.Password, dbUser.Password)
+	})
+}
+
+func TestUserPostgresStore_UpdateUser(t *testing.T) {
+	pgStore := NewUserPostgresStore()
+	stores := []store.IntegrationTestStore{pgStore}
+	store.IsolatedIntegrationTest(t, stores, func(t *testing.T) {
+		user := User{
+			Name:     "Test User",
+			Email:    "some@email.com",
+			Password: "password",
+		}
+		validationErrors, err := pgStore.CreateUser(&user)
+		assert.Nil(t, err)
+		assert.Empty(t, validationErrors)
+		assert.NotEqual(t, uint(0), user.ID)
+		user.Name = "Updated Name"
+		validationErrors, err = pgStore.UpdateUser(&user)
+		assert.Nil(t, err)
+		assert.Empty(t, validationErrors)
+		dbUser, err := pgStore.GetUserByID(user.ID)
+		assert.Nil(t, err)
+		assert.Equal(t, user.ID, dbUser.ID)
+		assert.Equal(t, user.Name, dbUser.Name)
+		assert.Equal(t, user.Email, dbUser.Email)
+		assert.Equal(t, user.Password, dbUser.Password)
+	})
+}
+
+func TestUserPostgresStore_DeleteUser(t *testing.T) {
+	pgStore := NewUserPostgresStore()
+	stores := []store.IntegrationTestStore{pgStore}
+	store.IsolatedIntegrationTest(t, stores, func(t *testing.T) {
+		user := User{
+			Name:     "Test User",
+			Email:    "some@user.com",
+			Password: "password",
+		}
+		validationErrors, err := pgStore.CreateUser(&user)
+		assert.Nil(t, err)
+		assert.Empty(t, validationErrors)
+		assert.NotEqual(t, uint(0), user.ID)
+		err = pgStore.DeleteUser(&user)
+		assert.Nil(t, err)
+		dbUser, err := pgStore.GetUserByID(user.ID)
+		assert.NotNil(t, err)
+		assert.Nil(t, dbUser)
 	})
 }

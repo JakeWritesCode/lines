@@ -18,6 +18,7 @@ type PostgresDBConfig struct {
 type PostgresStoreInterface interface {
 	BeginTransaction() error
 	RollbackTransaction() error
+	Models() []PostgresModel
 }
 
 // PostgresStore is a struct that contains an initialized PostgresDB instance.
@@ -37,6 +38,10 @@ func (s *PostgresStore) BeginTransaction() error {
 func (s *PostgresStore) RollbackTransaction() error {
 	s.Postgres = s.Postgres.Rollback()
 	return nil
+}
+
+func (s *PostgresStore) Models() []PostgresModel {
+	return []PostgresModel{}
 }
 
 type ModelValidationError struct {
