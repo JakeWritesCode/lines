@@ -16,6 +16,6 @@ func (m MockModel) Validate() []store.ModelValidationError {
 func TestNewUserPostgresStore_Integration(t *testing.T) {
 	pgStore := NewUserPostgresStore()
 	assert.Equal(t, pgStore.PostgresStore.Config.AppName, "USER")
-	assert.NotNil(t, pgStore.Postgres)
 	assert.NotNil(t, pgStore.Logger)
+	assert.NotNil(t, pgStore.PostgresStore.Postgres)
 }

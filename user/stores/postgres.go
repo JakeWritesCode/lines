@@ -29,7 +29,9 @@ func (s *UserPostgresStore) Models() []store.PostgresModel {
 func NewUserPostgresStore() *UserPostgresStore {
 	appName := "USER"
 	config := store.CreatePostgresDBConfig(appName)
-	userPostgresStore := &UserPostgresStore{}
+	userPostgresStore := &UserPostgresStore{
+		Logger: config.Logger,
+	}
 	db := store.CreatePostgresDB(*config, userPostgresStore.Models())
 	userPostgresStore.PostgresStore = &store.PostgresStore{
 		Config:   *config,
