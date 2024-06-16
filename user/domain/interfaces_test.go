@@ -12,8 +12,22 @@ type MockUserStoreUserExists struct {
 
 func (m MockUserStoreUserExists) GetUserByEmail(email string) (*stores.User, error) {
 	return &stores.User{
-		Name: "Test User",
+		Name:     "Test User",
+		Email:    "got@byemail.com",
+		Password: "password",
 	}, nil
+}
+
+func (m MockUserStoreUserExists) GetUserByID(id uint) (*stores.User, error) {
+	return &stores.User{
+		Name:     "Test User",
+		Email:    "got@byid.com",
+		Password: "password",
+	}, nil
+}
+
+func (m MockUserStoreUserExists) DeleteUser(user *stores.User) error {
+	return nil
 }
 
 func TestUserForCreate_Validate_EmptyName(t *testing.T) {
@@ -89,6 +103,10 @@ func (m MockUserStoreUserDoesNotExist) GetUserByEmail(email string) (*stores.Use
 	return nil, nil
 }
 
+func (m MockUserStoreUserDoesNotExist) GetUserByID(id uint) (*stores.User, error) {
+	return nil, nil
+}
+
 func TestUserForCreate_Validate_Valid(t *testing.T) {
 	user := UserForCreate{
 		Name:     "Test User",
@@ -105,6 +123,10 @@ type MockUserStoreError struct {
 }
 
 func (m MockUserStoreError) GetUserByEmail(email string) (*stores.User, error) {
+	return nil, assert.AnError
+}
+
+func (m MockUserStoreError) GetUserByID(id uint) (*stores.User, error) {
 	return nil, assert.AnError
 }
 

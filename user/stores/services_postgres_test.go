@@ -96,12 +96,12 @@ func TestUserPostgresStore_GetUserByID(t *testing.T) {
 	})
 }
 
-func TestUserPostgresStore_GetUserByID_Error(t *testing.T) {
+func TestUserPostgresStore_GetUserByID_NoUser(t *testing.T) {
 	pgStore := NewUserPostgresStore()
 	stores := []store.IntegrationTestStore{pgStore}
 	store.IsolatedIntegrationTest(t, stores, func(t *testing.T) {
 		user, err := pgStore.GetUserByID(0)
-		assert.NotNil(t, err)
+		assert.Nil(t, err)
 		assert.Nil(t, user)
 	})
 }
@@ -172,7 +172,7 @@ func TestUserPostgresStore_DeleteUser(t *testing.T) {
 		err = pgStore.DeleteUser(&user)
 		assert.Nil(t, err)
 		dbUser, err := pgStore.GetUserByID(user.ID)
-		assert.NotNil(t, err)
+		assert.Nil(t, err)
 		assert.Nil(t, dbUser)
 	})
 }

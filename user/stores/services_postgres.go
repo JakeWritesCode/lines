@@ -26,6 +26,9 @@ func (s *UserPostgresStore) GetUserByID(id uint) (*User, error) {
 	var user User
 	result := s.Postgres.First(&user, id)
 	if result.Error != nil {
+		if s.RecordNotFound(result.Error) {
+			return nil, nil
+		}
 		return nil, result.Error
 	}
 	return &user, nil
