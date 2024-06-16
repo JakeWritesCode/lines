@@ -44,6 +44,10 @@ func (s *PostgresStore) Models() []PostgresModel {
 	return []PostgresModel{}
 }
 
+func (s *PostgresStore) RecordNotFound(err error) bool {
+	return errors.Is(err, gorm.ErrRecordNotFound)
+}
+
 type ModelValidationError struct {
 	Field   string
 	Message string

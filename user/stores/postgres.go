@@ -11,6 +11,9 @@ type UserPostgresStoreInterface interface {
 	GetUserByEmail(email string) (*User, error)
 	GetUserByID(id uint) (*User, error)
 	UpdateUser(user *User) ([]store.ModelValidationError, error)
+	DeleteUser(user *User) error
+	BeginTransaction() error
+	RollbackTransaction() error
 }
 
 // UserPostgresStore is a struct that contains an initialized PostgresStore instance.

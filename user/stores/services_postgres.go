@@ -14,6 +14,9 @@ func (s *UserPostgresStore) GetUserByEmail(email string) (*User, error) {
 	var user User
 	err := s.Postgres.Where("email = ?", email).First(&user).Error
 	if err != nil {
+		if s.RecordNotFound(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &user, nil

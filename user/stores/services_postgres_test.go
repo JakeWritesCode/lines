@@ -64,12 +64,12 @@ func TestUserPostgresStore_GetUserByEmail(t *testing.T) {
 	})
 }
 
-func TestUserPostgresStore_GetUserByEmail_Error(t *testing.T) {
+func TestUserPostgresStore_GetUserByEmail_NoUser(t *testing.T) {
 	pgStore := NewUserPostgresStore()
 	stores := []store.IntegrationTestStore{pgStore}
 	store.IsolatedIntegrationTest(t, stores, func(t *testing.T) {
 		user, err := pgStore.GetUserByEmail("alala")
-		assert.NotNil(t, err)
+		assert.Nil(t, err)
 		assert.Nil(t, user)
 	})
 }

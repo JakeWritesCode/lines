@@ -1,7 +1,7 @@
 package stores
 
 type UserStoreInterface interface {
-	*UserPostgresStoreInterface
+	UserPostgresStoreInterface
 }
 
 type UserStore struct {
