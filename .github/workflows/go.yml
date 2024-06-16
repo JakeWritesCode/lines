@@ -44,4 +44,4 @@ jobs:
       - name: Test
         run: go test -v ./...
         env:
-          USERS_POSTGRES_URL_TEST: postgres://postgres:postgres@localhost:5432/users
+          USER_POSTGRES_URL_TEST: postgres://postgres:postgres@localhost:5432/users
