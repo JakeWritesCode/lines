@@ -295,3 +295,49 @@ func TestUserDomain_DeleteUser_Integration(t *testing.T) {
 		assert.Nil(t, res)
 	})
 }
+
+type UserStoreHashedPassword struct {
+	stores.UserStoreInterface
+}
+
+func (u *UserStoreHashedPassword) GetUserByID(id uint) (*stores.User, error) {
+	password, err := HashAndSalt("password")
+	if err != nil {
+		return nil, err
+	}
+	return &stores.User{
+		Name:     "Test User",
+		Email:    "test@email.com",
+		Password: password,
+	}, nil
+}
+
+func TestUserDomain_CheckPassword(t *testing.T) {
+	domain := UserDomain{
+		store: &UserStoreHashedPassword{},
+	}
+	assert.True(t, domain.CheckPassword(1, "password"))
+	assert.False(t, domain.CheckPassword(1, "wrongpassword"))
+}
+
+func TestUserDomain_CheckPassword_Error(t *testing.T) {
+	domain := UserDomain{
+		store: &MockUserStoreError{},
+	}
+	match := domain.CheckPassword(1, "password")
+	assert.False(t, match)
+}
+
+func TestUserDomain_GenerateJWT_Success(t *testing.T) {
+	domain := UserDomain{
+		config: UserDomainConfig{
+			SecretKey: []byte("averysecretkey"),
+		},
+	}
+	jwt, err := domain.GenerateJWT("email")
+	assert.Nil(t, err)
+	assert.NotNil(t, jwt)
+	assert.Equal(t, jwt.Email, "email")
+	assert.NotNil(t, jwt.ExpiresAt)
+	assert.NotNil(t, jwt.TokenString)
+}

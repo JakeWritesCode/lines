@@ -9,14 +9,14 @@ import (
 func TestNewUserDomainConfig(t *testing.T) {
 	config := NewUserDomainConfig()
 	assert.NotNil(t, config)
-	assert.NotEmpty(t, config.SECRET_KEY)
+	assert.NotEmpty(t, config.SecretKey)
 }
 
 func TestNewUserDomain(t *testing.T) {
 	domain := NewUserDomain()
 	assert.NotNil(t, domain)
 	assert.NotNil(t, domain.store)
-	assert.NotEmpty(t, domain.config.SECRET_KEY)
+	assert.NotEmpty(t, domain.config.SecretKey)
 }
 
 func TestUserDomain_Integration(t *testing.T) {

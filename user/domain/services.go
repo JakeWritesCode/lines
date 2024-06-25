@@ -2,9 +2,11 @@ package domain
 
 import (
 	"errors"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"lines/lines/domain"
 	"lines/user/stores"
+	"time"
 )
 
 func HashAndSalt(password string) (string, error) {
@@ -87,4 +89,29 @@ func (u *UserDomain) DeleteUser(id uint) error {
 		return nil
 	}
 	return u.store.DeleteUser(storeUser)
+}
+
+func (u *UserDomain) CheckPassword(userID uint, password string) bool {
+	user, err := u.store.GetUserByID(userID)
+	if err != nil || user == nil {
+		return false
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	return err == nil
+}
+
+func (u *UserDomain) GenerateJWT(userEmail string) (*JWTClaimsOut, error) {
+	claims := JWTClaimsOut{
+		Email: userEmail,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(u.config.TokenExpirationTimeMinutes) * time.Minute)),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(u.config.SecretKey)
+	if err != nil {
+		return nil, err
+	}
+	claims.TokenString = tokenString
+	return &claims, nil
 }

@@ -1,12 +1,20 @@
 package domain
 
 import (
+	"github.com/golang-jwt/jwt/v5"
 	"lines/lines/domain"
 	"lines/user/stores"
 )
 
 type UserDomainInterface interface {
-	CreateUser() error
+	CreateUser(user UserForCreate) ([]domain.DomainValidationErrors, *UserData, error)
+	GetUserByEmail(email string) (*UserData, error)
+	GetUserByID(id uint) (*UserData, error)
+	DeleteUser(id uint) error
+	CheckPassword(userID uint, password string) bool
+	GenerateJWT(userEmail string) (*JWTClaimsOut, error)
+	BeginTransaction() error
+	RollbackTransaction() error
 }
 
 type UserForCreate struct {
@@ -37,4 +45,10 @@ type UserData struct {
 	ID    uint
 	Name  string
 	Email string
+}
+
+type JWTClaimsOut struct {
+	Email       string `json:"email"`
+	TokenString string `json:"token_string"`
+	jwt.RegisteredClaims
 }

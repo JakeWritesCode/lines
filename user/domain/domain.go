@@ -7,18 +7,28 @@ import (
 
 // UserDomainConfig is a struct that contains the configuration for a UserDomain.
 type UserDomainConfig struct {
-	SECRET_KEY string
+	SecretKey                  []byte
+	TokenExpirationTimeMinutes int
 }
 
 func NewUserDomainConfig() UserDomainConfig {
 	return UserDomainConfig{
-		SECRET_KEY: utils.GetEnvOrDefault("SECRET_KEY", "secret_key", "string").(string),
+		SecretKey:                  []byte(utils.GetEnvOrDefault("SECRET_KEY", "secret_key", "string").(string)),
+		TokenExpirationTimeMinutes: utils.GetEnvOrDefault("TOKEN_EXPIRATION_TIME_MINUTES", "15", "int").(int),
 	}
 }
 
 type UserDomain struct {
 	store  stores.UserStoreInterface
 	config UserDomainConfig
+}
+
+func (d *UserDomain) BeginTransaction() error {
+	return d.store.BeginTransaction()
+}
+
+func (d *UserDomain) RollbackTransaction() error {
+	return d.store.RollbackTransaction()
 }
 
 // NewUserDomain is a function that returns a new UserDomain instance.
