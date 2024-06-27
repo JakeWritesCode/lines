@@ -293,3 +293,19 @@ func TestUserHttpIngress_V1SignIn_Integration(t *testing.T) {
 		assert.Equal(t, "Bearer="+jwt.TokenString+"; Path=/; Domain=localhost; Max-Age=899; HttpOnly", rr.Header().Get("Set-Cookie"))
 	})
 }
+
+func TestUserHttpIngress_UserSignOutAPI(t *testing.T) {
+	ingress := UserHttpIngress{}
+	req, err := http.NewRequest("GET", "/sign-out", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	router := gin.Default()
+	router.GET("/sign-out", ingress.UserSignOutAPI)
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, "Bearer=; Path=/; HttpOnly", rr.Header().Get("Set-Cookie"))
+}

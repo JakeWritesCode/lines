@@ -51,19 +51,19 @@ func (h *UserHttpIngress) V1SignIn(c *gin.Context) {
 	c.JSON(http.StatusOK, jwt)
 }
 
-//// UserSignOutAPI is the handler for user sign out, it clears the JWT cookie.
-//func (h *UserHttpIngress) UserSignOutAPI(c *gin.Context) {
-//	c.SetCookie(
-//		"Bearer",
-//		"",
-//		0,
-//		"/",
-//		h.Config.SiteDomain,
-//		h.Config.UseSSL,
-//		true,
-//	)
-//}
-//
+// UserSignOutAPI is the handler for user sign out, it clears the JWT cookie.
+func (h *UserHttpIngress) UserSignOutAPI(c *gin.Context) {
+	c.SetCookie(
+		"Bearer",
+		"",
+		0,
+		"/",
+		h.config.SiteDomain,
+		h.config.UseSSL,
+		true,
+	)
+}
+
 //// UserRefreshTokenAPI is the handler for refreshing a JWT token.
 //func (h *UserHttpIngress) UserRefreshTokenAPI(c *gin.Context) {
 //	authResponse := h.AuthHandler.AuthenticateRequest(c.Request)

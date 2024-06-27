@@ -5,7 +5,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"lines/lines/domain"
+	linesHttp "lines/lines/http"
 	"lines/user/stores"
+	"net/http"
+	"strings"
 	"time"
 )
 
@@ -114,4 +117,51 @@ func (u *UserDomain) GenerateJWT(userEmail string) (*JWTClaimsOut, error) {
 	}
 	claims.TokenString = tokenString
 	return &claims, nil
+}
+
+func (u *UserDomain) GetJWTFromRequest(r http.Request) (string, error) {
+	// Cookie
+	tokenString, err := r.Cookie("Bearer")
+	if err == nil {
+		return tokenString.Value, nil
+	}
+	// Header
+	tokenStringHeader := r.Header.Get("Authorization")
+	if tokenStringHeader != "" {
+		return strings.Replace(tokenStringHeader, "Bearer ", "", 1), nil
+	}
+	return "", errors.New("no token found")
+}
+
+func (u *UserDomain) ValidateJWT(token string) (*linesHttp.HttpError, *JWTClaimsOut) {
+	claims := &JWTClaimsOut{}
+	parsedToken, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+		return u.config.SecretKey, nil
+	})
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			return &linesHttp.HttpError{
+				Message: []string{"Unauthorised"},
+			}, nil
+		}
+		return &linesHttp.HttpError{
+			Message: []string{"Bearer token invalid"},
+		}, nil
+	}
+	if !parsedToken.Valid {
+		return &linesHttp.HttpError{
+			Message: []string{"Unauthorised"},
+		}, nil
+	}
+	return nil, claims
+}
+
+func (u *UserDomain) ValidateRequest(r http.Request) (*linesHttp.HttpError, *JWTClaimsOut) {
+	tokenString, err := u.GetJWTFromRequest(r)
+	if err != nil {
+		return &linesHttp.HttpError{
+			Message: []string{"Unauthorised"},
+		}, nil
+	}
+	return u.ValidateJWT(tokenString)
 }

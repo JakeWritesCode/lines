@@ -5,6 +5,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"lines/lines/store"
 	"lines/user/stores"
+	"net/http"
 	"testing"
 )
 
@@ -340,4 +341,125 @@ func TestUserDomain_GenerateJWT_Success(t *testing.T) {
 	assert.Equal(t, jwt.Email, "email")
 	assert.NotNil(t, jwt.ExpiresAt)
 	assert.NotNil(t, jwt.TokenString)
+}
+
+func TestUserDomain_ValidateJWT_Invalid(t *testing.T) {
+	domain := UserDomain{
+		config: UserDomainConfig{
+			SecretKey: []byte("averysecretkey"),
+		},
+	}
+	jwtString := "invalidstring"
+	errors, claims := domain.ValidateJWT(jwtString)
+	assert.Contains(t, errors.Message, "Bearer token invalid")
+	assert.Nil(t, claims)
+}
+
+func TestUserDomain_ValidateJWT_Expired(t *testing.T) {
+	domain := UserDomain{
+		config: UserDomainConfig{
+			SecretKey:                  []byte("averysecretkey"),
+			TokenExpirationTimeMinutes: 0,
+		},
+	}
+	jwt, err := domain.GenerateJWT("email")
+	assert.Nil(t, err)
+	assert.NotNil(t, jwt)
+	errors, claims := domain.ValidateJWT(jwt.TokenString)
+	assert.Contains(t, errors.Message, "Bearer token invalid")
+	assert.Nil(t, claims)
+}
+
+func TestUserDomain_ValidateJWT_Success(t *testing.T) {
+	domain := UserDomain{
+		config: UserDomainConfig{
+			SecretKey:                  []byte("averysecret"),
+			TokenExpirationTimeMinutes: 15,
+		},
+	}
+	jwt, err := domain.GenerateJWT("email")
+	assert.Nil(t, err)
+	assert.NotNil(t, jwt)
+	errors, claims := domain.ValidateJWT(jwt.TokenString)
+	assert.Nil(t, errors)
+	assert.NotNil(t, claims)
+	assert.Equal(t, claims.Email, "email")
+}
+
+func TestUserDomain_GetJWTFromRequest_NoCookie(t *testing.T) {
+	req := http.Request{}
+	domain := UserDomain{}
+	token, err := domain.GetJWTFromRequest(req)
+	assert.Empty(t, token)
+	assert.NotNil(t, err)
+}
+
+func TestUserDomain_GetJWTFromRequest_Success(t *testing.T) {
+	req := http.Request{}
+	cookie := http.Cookie{
+		Name:  "Bearer",
+		Value: "token",
+	}
+	req.AddCookie(&cookie)
+	domain := UserDomain{}
+	token, err := domain.GetJWTFromRequest(req)
+	assert.Equal(t, token, "token")
+	assert.Nil(t, err)
+}
+
+func TestUserDomain_GetJWTFromRequest_Header(t *testing.T) {
+	req := http.Request{
+		Header: map[string][]string{
+			"Authorization": {"Token token"},
+		},
+	}
+	domain := UserDomain{}
+	token, err := domain.GetJWTFromRequest(req)
+	assert.Equal(t, token, "Token token")
+	assert.Nil(t, err)
+}
+
+func TestUserDomain_ValidateRequest_NoToken(t *testing.T) {
+	req := http.Request{}
+	domain := UserDomain{}
+	errors, claims := domain.ValidateRequest(req)
+	assert.NotNil(t, errors)
+	assert.Nil(t, claims)
+}
+
+func TestUserDomain_ValidateRequest_InvalidToken(t *testing.T) {
+	req := http.Request{
+		Header: map[string][]string{
+			"Authorization": {"Token sometoken"},
+		},
+	}
+	domain := UserDomain{
+		config: UserDomainConfig{
+			SecretKey: []byte("averysecret"),
+		},
+	}
+	errors, claims := domain.ValidateRequest(req)
+	assert.Contains(t, errors.Message, "Bearer token invalid")
+	assert.Nil(t, claims)
+}
+
+func TestUserDomain_ValidateRequest_ValidToken(t *testing.T) {
+	domain := UserDomain{
+		config: UserDomainConfig{
+			SecretKey:                  []byte("averysecretkey"),
+			TokenExpirationTimeMinutes: 15,
+		},
+	}
+	jwt, err := domain.GenerateJWT("email")
+	assert.Nil(t, err)
+	assert.NotNil(t, jwt)
+	req := http.Request{
+		Header: map[string][]string{
+			"Authorization": {"Bearer " + jwt.TokenString},
+		},
+	}
+	errors, claims := domain.ValidateRequest(req)
+	assert.Nil(t, errors)
+	assert.NotNil(t, claims)
+	assert.Equal(t, claims.Email, "email")
 }
