@@ -294,7 +294,7 @@ func TestUserHttpIngress_V1SignIn_Integration(t *testing.T) {
 	})
 }
 
-func TestUserHttpIngress_UserSignOutAPI(t *testing.T) {
+func TestUserHttpIngress_V1SignOut(t *testing.T) {
 	ingress := UserHttpIngress{}
 	req, err := http.NewRequest("GET", "/sign-out", nil)
 	if err != nil {
@@ -303,9 +303,52 @@ func TestUserHttpIngress_UserSignOutAPI(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	router := gin.Default()
-	router.GET("/sign-out", ingress.UserSignOutAPI)
+	router.GET("/sign-out", ingress.V1SignOut)
 	router.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Equal(t, "Bearer=; Path=/; HttpOnly", rr.Header().Get("Set-Cookie"))
+}
+
+func TestUserHttpIngress_V1RefreshToken_Unauthenticated(t *testing.T) {
+	ingress := UserHttpIngress{
+		domain: &domain.UserDomain{},
+	}
+	EndpointIsAuthenticatedTest(t, ingress.V1RefreshToken)
+}
+
+func TestUserHttpIngress_V1RefreshToken_Success(t *testing.T) {
+	ingress := UserHttpIngress{
+		domain: &domain.UserDomain{
+			Config: domain.UserDomainConfig{TokenExpirationTimeMinutes: 10},
+		},
+	}
+	token, err := ingress.domain.GenerateJWT("email")
+	// Change expiry to change token string
+	ingress = UserHttpIngress{
+		domain: &domain.UserDomain{
+			Config: domain.UserDomainConfig{TokenExpirationTimeMinutes: 5},
+		},
+	}
+	assert.Nil(t, err)
+	req, err := http.NewRequest("GET", "/refresh-token", nil)
+	assert.Nil(t, err)
+	req.AddCookie(&http.Cookie{
+		Name:  "Bearer",
+		Value: token.TokenString,
+	})
+
+	rr := httptest.NewRecorder()
+	router := gin.Default()
+	router.GET("/refresh-token", ingress.V1RefreshToken)
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	jwt := domain.JWTClaimsOut{}
+	err = json.Unmarshal(rr.Body.Bytes(), &jwt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.NotNil(t, jwt.TokenString)
+	assert.NotEqual(t, token.TokenString, jwt.TokenString)
 }

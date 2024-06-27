@@ -52,7 +52,7 @@ func (h *UserHttpIngress) V1SignIn(c *gin.Context) {
 }
 
 // UserSignOutAPI is the handler for user sign out, it clears the JWT cookie.
-func (h *UserHttpIngress) UserSignOutAPI(c *gin.Context) {
+func (h *UserHttpIngress) V1SignOut(c *gin.Context) {
 	c.SetCookie(
 		"Bearer",
 		"",
@@ -64,44 +64,32 @@ func (h *UserHttpIngress) UserSignOutAPI(c *gin.Context) {
 	)
 }
 
-//// UserRefreshTokenAPI is the handler for refreshing a JWT token.
-//func (h *UserHttpIngress) UserRefreshTokenAPI(c *gin.Context) {
-//	authResponse := h.AuthHandler.AuthenticateRequest(c.Request)
-//	statusCode, errorString := h.AuthHandler.CheckIsAuthed(authResponse, "Bearer")
-//	if statusCode != 0 {
-//		c.JSON(
-//			statusCode,
-//			gin.H{"error": errorString},
-//		)
-//		return
-//	}
-//
-//	expirationTime := time.Now().Add(
-//		time.Duration(h.Config.TokenExpirationTimeMinutes) * time.Minute,
-//	)
-//	claims := &Claims{
-//		Email: authResponse.User.Email,
-//		RegisteredClaims: jwt.RegisteredClaims{
-//			ExpiresAt: jwt.NewNumericDate(expirationTime),
-//		},
-//	}
-//	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-//	tokenString, err := token.SignedString(h.Config.SecretKey)
-//	if err != nil {
-//		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to generate token."})
-//	}
-//
-//	c.SetCookie(
-//		"Bearer",
-//		tokenString,
-//		h.Config.TokenExpirationTimeMinutes*60,
-//		"/",
-//		h.Config.SiteDomain,
-//		h.Config.UseSSL,
-//		true,
-//	)
-//}
-//
+// UserRefreshTokenAPI is the handler for refreshing a JWT token.
+func (h *UserHttpIngress) V1RefreshToken(c *gin.Context) {
+	authError, claims := h.domain.ValidateRequestAuth(*c.Request)
+	if authError != nil {
+		c.JSON(http.StatusUnauthorized, authError)
+		return
+	}
+	newClaims, err := h.domain.GenerateJWT(claims.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, linesHttp.HttpError{Message: []string{"Could not generate JWT."}})
+		return
+	}
+
+	c.SetCookie(
+		"Bearer",
+		newClaims.TokenString,
+		int(newClaims.ExpiresAt.Sub(time.Now()).Seconds()),
+		"/",
+		h.config.SiteDomain,
+		h.config.UseSSL,
+		true,
+	)
+
+	c.JSON(http.StatusOK, newClaims)
+}
+
 //// UserGetJWTAPI is the handler for getting a JWT token.
 //// Token is used for authing the dashboard websocket.
 //func (h *UserHttpIngress) UserGetJWTAPI(c *gin.Context) {

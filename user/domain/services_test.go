@@ -331,7 +331,7 @@ func TestUserDomain_CheckPassword_Error(t *testing.T) {
 
 func TestUserDomain_GenerateJWT_Success(t *testing.T) {
 	domain := UserDomain{
-		config: UserDomainConfig{
+		Config: UserDomainConfig{
 			SecretKey: []byte("averysecretkey"),
 		},
 	}
@@ -345,7 +345,7 @@ func TestUserDomain_GenerateJWT_Success(t *testing.T) {
 
 func TestUserDomain_ValidateJWT_Invalid(t *testing.T) {
 	domain := UserDomain{
-		config: UserDomainConfig{
+		Config: UserDomainConfig{
 			SecretKey: []byte("averysecretkey"),
 		},
 	}
@@ -357,7 +357,7 @@ func TestUserDomain_ValidateJWT_Invalid(t *testing.T) {
 
 func TestUserDomain_ValidateJWT_Expired(t *testing.T) {
 	domain := UserDomain{
-		config: UserDomainConfig{
+		Config: UserDomainConfig{
 			SecretKey:                  []byte("averysecretkey"),
 			TokenExpirationTimeMinutes: 0,
 		},
@@ -372,7 +372,7 @@ func TestUserDomain_ValidateJWT_Expired(t *testing.T) {
 
 func TestUserDomain_ValidateJWT_Success(t *testing.T) {
 	domain := UserDomain{
-		config: UserDomainConfig{
+		Config: UserDomainConfig{
 			SecretKey:                  []byte("averysecret"),
 			TokenExpirationTimeMinutes: 15,
 		},
@@ -419,33 +419,33 @@ func TestUserDomain_GetJWTFromRequest_Header(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestUserDomain_ValidateRequest_NoToken(t *testing.T) {
+func TestUserDomain_ValidateRequestAuth_NoToken(t *testing.T) {
 	req := http.Request{}
 	domain := UserDomain{}
-	errors, claims := domain.ValidateRequest(req)
+	errors, claims := domain.ValidateRequestAuth(req)
 	assert.NotNil(t, errors)
 	assert.Nil(t, claims)
 }
 
-func TestUserDomain_ValidateRequest_InvalidToken(t *testing.T) {
+func TestUserDomain_ValidateRequestAuth_InvalidToken(t *testing.T) {
 	req := http.Request{
 		Header: map[string][]string{
 			"Authorization": {"Token sometoken"},
 		},
 	}
 	domain := UserDomain{
-		config: UserDomainConfig{
+		Config: UserDomainConfig{
 			SecretKey: []byte("averysecret"),
 		},
 	}
-	errors, claims := domain.ValidateRequest(req)
+	errors, claims := domain.ValidateRequestAuth(req)
 	assert.Contains(t, errors.Message, "Bearer token invalid")
 	assert.Nil(t, claims)
 }
 
-func TestUserDomain_ValidateRequest_ValidToken(t *testing.T) {
+func TestUserDomain_ValidateRequestAuth_ValidToken(t *testing.T) {
 	domain := UserDomain{
-		config: UserDomainConfig{
+		Config: UserDomainConfig{
 			SecretKey:                  []byte("averysecretkey"),
 			TokenExpirationTimeMinutes: 15,
 		},
@@ -458,7 +458,7 @@ func TestUserDomain_ValidateRequest_ValidToken(t *testing.T) {
 			"Authorization": {"Bearer " + jwt.TokenString},
 		},
 	}
-	errors, claims := domain.ValidateRequest(req)
+	errors, claims := domain.ValidateRequestAuth(req)
 	assert.Nil(t, errors)
 	assert.NotNil(t, claims)
 	assert.Equal(t, claims.Email, "email")

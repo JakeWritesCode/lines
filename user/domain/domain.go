@@ -20,7 +20,7 @@ func NewUserDomainConfig() UserDomainConfig {
 
 type UserDomain struct {
 	store  stores.UserStoreInterface
-	config UserDomainConfig
+	Config UserDomainConfig
 }
 
 func (d *UserDomain) BeginTransaction() error {
@@ -35,6 +35,6 @@ func (d *UserDomain) RollbackTransaction() error {
 func NewUserDomain() *UserDomain {
 	return &UserDomain{
 		store:  stores.NewUserStore(),
-		config: NewUserDomainConfig(),
+		Config: NewUserDomainConfig(),
 	}
 }

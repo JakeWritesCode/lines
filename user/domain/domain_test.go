@@ -16,7 +16,7 @@ func TestNewUserDomain(t *testing.T) {
 	domain := NewUserDomain()
 	assert.NotNil(t, domain)
 	assert.NotNil(t, domain.store)
-	assert.NotEmpty(t, domain.config.SecretKey)
+	assert.NotEmpty(t, domain.Config.SecretKey)
 }
 
 func TestUserDomain_Integration(t *testing.T) {

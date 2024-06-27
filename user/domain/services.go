@@ -107,11 +107,11 @@ func (u *UserDomain) GenerateJWT(userEmail string) (*JWTClaimsOut, error) {
 	claims := JWTClaimsOut{
 		Email: userEmail,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(u.config.TokenExpirationTimeMinutes) * time.Minute)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(u.Config.TokenExpirationTimeMinutes) * time.Minute)),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(u.config.SecretKey)
+	tokenString, err := token.SignedString(u.Config.SecretKey)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func (u *UserDomain) GetJWTFromRequest(r http.Request) (string, error) {
 func (u *UserDomain) ValidateJWT(token string) (*linesHttp.HttpError, *JWTClaimsOut) {
 	claims := &JWTClaimsOut{}
 	parsedToken, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-		return u.config.SecretKey, nil
+		return u.Config.SecretKey, nil
 	})
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
@@ -156,7 +156,7 @@ func (u *UserDomain) ValidateJWT(token string) (*linesHttp.HttpError, *JWTClaims
 	return nil, claims
 }
 
-func (u *UserDomain) ValidateRequest(r http.Request) (*linesHttp.HttpError, *JWTClaimsOut) {
+func (u *UserDomain) ValidateRequestAuth(r http.Request) (*linesHttp.HttpError, *JWTClaimsOut) {
 	tokenString, err := u.GetJWTFromRequest(r)
 	if err != nil {
 		return &linesHttp.HttpError{

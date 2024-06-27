@@ -3,7 +3,9 @@ package domain
 import (
 	"github.com/golang-jwt/jwt/v5"
 	"lines/lines/domain"
+	linesHttp "lines/lines/http"
 	"lines/user/stores"
+	"net/http"
 )
 
 type UserDomainInterface interface {
@@ -13,6 +15,7 @@ type UserDomainInterface interface {
 	DeleteUser(id uint) error
 	CheckPassword(userID uint, password string) bool
 	GenerateJWT(userEmail string) (*JWTClaimsOut, error)
+	ValidateRequestAuth(r http.Request) (*linesHttp.HttpError, *JWTClaimsOut)
 	BeginTransaction() error
 	RollbackTransaction() error
 }
