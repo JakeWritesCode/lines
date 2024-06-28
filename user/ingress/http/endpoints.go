@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func (h *UserHttpIngress) V1SignIn(c *gin.Context) {
+func (i *UserHttpIngress) V1SignIn(c *gin.Context) {
 	var credentials UserLogin
 	err := c.BindJSON(&credentials)
 	if err != nil {
@@ -20,19 +20,19 @@ func (h *UserHttpIngress) V1SignIn(c *gin.Context) {
 		return
 	}
 
-	user, err := h.domain.GetUserByEmail(credentials.Email)
+	user, err := i.domain.GetUserByEmail(credentials.Email)
 	if err != nil || user == nil {
 		c.JSON(http.StatusUnauthorized, linesHttp.HttpError{Message: []string{"Credentials not recognised."}})
 		return
 	}
 
-	passwordCorrect := h.domain.CheckPassword(user.ID, credentials.Password)
+	passwordCorrect := i.domain.CheckPassword(user.ID, credentials.Password)
 	if !passwordCorrect {
 		c.JSON(http.StatusUnauthorized, linesHttp.HttpError{Message: []string{"Credentials not recognised."}})
 		return
 	}
 
-	jwt, err := h.domain.GenerateJWT(user.Email)
+	jwt, err := i.domain.GenerateJWT(user.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, linesHttp.HttpError{Message: []string{"Could not generate JWT."}})
 	}
@@ -43,8 +43,8 @@ func (h *UserHttpIngress) V1SignIn(c *gin.Context) {
 		jwt.TokenString,
 		expiresAt,
 		"/",
-		h.config.SiteDomain,
-		h.config.UseSSL,
+		i.config.SiteDomain,
+		i.config.UseSSL,
 		true,
 	)
 
@@ -52,26 +52,26 @@ func (h *UserHttpIngress) V1SignIn(c *gin.Context) {
 }
 
 // UserSignOutAPI is the handler for user sign out, it clears the JWT cookie.
-func (h *UserHttpIngress) V1SignOut(c *gin.Context) {
+func (i *UserHttpIngress) V1SignOut(c *gin.Context) {
 	c.SetCookie(
 		"Bearer",
 		"",
 		0,
 		"/",
-		h.config.SiteDomain,
-		h.config.UseSSL,
+		i.config.SiteDomain,
+		i.config.UseSSL,
 		true,
 	)
 }
 
 // UserRefreshTokenAPI is the handler for refreshing a JWT token.
-func (h *UserHttpIngress) V1RefreshToken(c *gin.Context) {
-	authError, claims := h.domain.ValidateRequestAuth(*c.Request)
+func (i *UserHttpIngress) V1RefreshToken(c *gin.Context) {
+	authError, claims := i.domain.ValidateRequestAuth(*c.Request)
 	if authError != nil {
 		c.JSON(http.StatusUnauthorized, authError)
 		return
 	}
-	newClaims, err := h.domain.GenerateJWT(claims.Email)
+	newClaims, err := i.domain.GenerateJWT(claims.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, linesHttp.HttpError{Message: []string{"Could not generate JWT."}})
 		return
@@ -82,41 +82,10 @@ func (h *UserHttpIngress) V1RefreshToken(c *gin.Context) {
 		newClaims.TokenString,
 		int(newClaims.ExpiresAt.Sub(time.Now()).Seconds()),
 		"/",
-		h.config.SiteDomain,
-		h.config.UseSSL,
+		i.config.SiteDomain,
+		i.config.UseSSL,
 		true,
 	)
 
 	c.JSON(http.StatusOK, newClaims)
 }
-
-//// UserGetJWTAPI is the handler for getting a JWT token.
-//// Token is used for authing the dashboard websocket.
-//func (h *UserHttpIngress) UserGetJWTAPI(c *gin.Context) {
-//	authResponse := h.AuthHandler.AuthenticateRequest(c.Request)
-//	statusCode, errorString := h.AuthHandler.CheckIsAuthed(authResponse, "Bearer")
-//	if statusCode != 0 {
-//		c.JSON(
-//			statusCode,
-//			gin.H{"error": errorString},
-//		)
-//		return
-//	}
-//
-//	expirationTime := time.Now().Add(
-//		time.Duration(h.Config.TokenExpirationTimeMinutes) * time.Minute,
-//	)
-//	claims := &Claims{
-//		Email: authResponse.User.Email,
-//		RegisteredClaims: jwt.RegisteredClaims{
-//			ExpiresAt: jwt.NewNumericDate(expirationTime),
-//		},
-//	}
-//	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-//	tokenString, err := token.SignedString(h.Config.SecretKey)
-//	if err != nil {
-//		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to generate token."})
-//	}
-//
-//	c.JSON(http.StatusOK, gin.H{"token": tokenString})
-//}

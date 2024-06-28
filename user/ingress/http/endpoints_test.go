@@ -260,7 +260,8 @@ func TestUserHttpIngress_V1SignIn_SetsCookie(t *testing.T) {
 }
 
 func TestUserHttpIngress_V1SignIn_Integration(t *testing.T) {
-	ingress := NewUserHttpIngress()
+
+	ingress := NewUserHttpIngress(nil)
 	store.IsolatedIntegrationTest(t, []store.IntegrationTestStore{ingress.domain}, func(t *testing.T) {
 		user := domain.UserForCreate{
 			Name:     "name",

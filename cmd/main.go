@@ -5,13 +5,15 @@ import (
 	"lines/internal"
 	"lines/lines/app"
 	"lines/lines/http"
+	"lines/user"
 	"strconv"
 )
 
 // Main is the entry point for the application.
 func main() {
+	userApp := user.NewUserApp()
 	apps := []app.App{
-		// Add your apps here.
+		&userApp,
 	}
 	config := internal.NewConfig()
 	httpEngine := http.CreateEngine(config)
@@ -29,7 +31,7 @@ func MainHandler(
 
 	// Next, we initialise each of our apps. Each app then initialises its own dependencies.
 	for _, a := range apps {
-		err := a.Initialise(config)
+		err := a.Initialise()
 		if err != nil {
 			config.Logger.Fatal(
 				"main",

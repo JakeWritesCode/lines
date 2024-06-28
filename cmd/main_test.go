@@ -16,9 +16,8 @@ type mockApp struct {
 	RegisterGRPCServicesCalls int
 }
 
-func (m *mockApp) Initialise(config *internal.MainConfig) error {
+func (m *mockApp) Initialise() error {
 	m.InitialiseCalls++
-	m.InitialiseArgs = append(m.InitialiseArgs, config)
 	return nil
 }
 
@@ -33,6 +32,7 @@ func (m *mockApp) RegisterGRPCServices() error {
 
 type mockHttpEngine struct {
 	RunCalls int
+	http.HttpEngine
 }
 
 func (m *mockHttpEngine) Run(addr ...string) error {
@@ -56,7 +56,6 @@ func TestMainHandler_InitialisesApps(t *testing.T) {
 		assert.Equal(t, 1, mockApp.InitialiseCalls)
 		assert.Equal(t, 1, mockApp.RegisterHttpRoutesCalls)
 		assert.Equal(t, 0, mockApp.RegisterGRPCServicesCalls)
-		assert.Equal(t, config, mockApp.InitialiseArgs[0])
 	}
 }
 
@@ -76,7 +75,7 @@ type mockAppWithInitialiseError struct {
 	*mockApp
 }
 
-func (m *mockAppWithInitialiseError) Initialise(config *internal.MainConfig) error {
+func (m *mockAppWithInitialiseError) Initialise() error {
 	return assert.AnError
 }
 

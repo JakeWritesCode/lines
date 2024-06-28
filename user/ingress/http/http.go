@@ -7,7 +7,7 @@ import (
 )
 
 type UserHttpIngressInterface interface {
-	RegisterRoutes(e http.HttpEngine) error
+	RegisterRoutes(e http.HttpEngine)
 }
 
 type UserHttpConfig struct {
@@ -27,9 +27,18 @@ type UserHttpIngress struct {
 	domain user_domain.UserDomainInterface
 }
 
-func NewUserHttpIngress() UserHttpIngress {
+func (i *UserHttpIngress) RegisterRoutes(e http.HttpEngine) {
+	e.POST("/users/sign-in", i.V1SignIn)
+	e.POST("/users/sign-out", i.V1SignOut)
+	e.GET("/users/refresh-token", i.V1RefreshToken)
+}
+
+func NewUserHttpIngress(domain user_domain.UserDomainInterface) UserHttpIngress {
+	if domain == nil {
+		domain = user_domain.NewUserDomain()
+	}
 	return UserHttpIngress{
 		config: NewUserHttpConfig(),
-		domain: user_domain.NewUserDomain(),
+		domain: domain,
 	}
 }
