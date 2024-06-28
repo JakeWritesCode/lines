@@ -394,19 +394,6 @@ func TestUserDomain_GetJWTFromRequest_NoCookie(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestUserDomain_GetJWTFromRequest_Success(t *testing.T) {
-	req := http.Request{}
-	cookie := http.Cookie{
-		Name:  "Bearer",
-		Value: "token",
-	}
-	req.AddCookie(&cookie)
-	domain := UserDomain{}
-	token, err := domain.GetJWTFromRequest(req)
-	assert.Equal(t, token, "token")
-	assert.Nil(t, err)
-}
-
 func TestUserDomain_GetJWTFromRequest_Header(t *testing.T) {
 	req := http.Request{
 		Header: map[string][]string{

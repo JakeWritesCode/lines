@@ -47,7 +47,7 @@ func EmailValidator(value string, fieldName string, errors []DomainValidationErr
 func StoreValidationErrorToDomainValidationError(storeErrors []store.ModelValidationError) []DomainValidationErrors {
 	var domainErrors []DomainValidationErrors
 	for _, storeError := range storeErrors {
-		return AddValidationError(storeError.Field, storeError.Message, domainErrors)
+		domainErrors = AddValidationError(storeError.Field, storeError.Message, domainErrors)
 	}
 	return domainErrors
 }
