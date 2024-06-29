@@ -31,6 +31,8 @@ func (i *UserHttpIngress) RegisterRoutes(e http.HttpEngine) {
 	e.POST("/users/sign-in", i.V1SignIn)
 	e.POST("/users/sign-out", i.V1SignOut)
 	e.GET("/users/refresh-token", i.V1RefreshToken)
+	e.POST("/users/sign-up", i.V1SignUp)
+	e.GET("/users/me", i.V1GetUser)
 }
 
 func NewUserHttpIngress(domain user_domain.UserDomainInterface) UserHttpIngress {
