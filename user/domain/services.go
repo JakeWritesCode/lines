@@ -165,3 +165,33 @@ func (u *UserDomain) ValidateRequestAuth(r http.Request) (*linesHttp.HttpError, 
 	}
 	return u.ValidateJWT(tokenString)
 }
+
+func (u *UserDomain) ChangeUserPassword(userID uint, oldPassword string, newPassword string) ([]domain.DomainValidationErrors, error) {
+	if !u.CheckPassword(userID, oldPassword) {
+		return []domain.DomainValidationErrors{
+			{
+				Field:  "old_password",
+				Errors: []string{"Old password is incorrect"},
+			},
+		}, nil
+	}
+	hashed, err := HashAndSalt(newPassword)
+	if err != nil {
+		return nil, errors.New("could not hash password")
+	}
+
+	storeUser, err := u.store.GetUserByID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	storeUser.Password = hashed
+	modelErrors, err := u.store.UpdateUser(storeUser)
+	if err != nil {
+		return nil, err
+	}
+	if len(modelErrors) > 0 {
+		return domain.StoreValidationErrorToDomainValidationError(modelErrors), nil
+	}
+	return nil, nil
+}

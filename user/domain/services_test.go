@@ -450,3 +450,146 @@ func TestUserDomain_ValidateRequestAuth_ValidToken(t *testing.T) {
 	assert.NotNil(t, claims)
 	assert.Equal(t, claims.Email, "email")
 }
+
+type MockUserStoreMismatchedPassword struct {
+	stores.UserStoreInterface
+}
+
+func (m *MockUserStoreMismatchedPassword) GetUserByID(id uint) (*stores.User, error) {
+	password, err := HashAndSalt("password")
+	if err != nil {
+		return nil, err
+	}
+	return &stores.User{
+		Name:     "Test User",
+		Email:    "test@user.com",
+		Password: password,
+	}, nil
+}
+
+func TestUserDomain_ChangeUserPassword_PasswordDoesNotMatch(t *testing.T) {
+	domain := UserDomain{
+		store: &MockUserStoreMismatchedPassword{},
+	}
+	errors, err := domain.ChangeUserPassword(1, "sausage", "newpassword")
+	assert.NotEmpty(t, errors)
+	assert.Nil(t, err)
+	assert.Equal(t, errors[0].Field, "old_password")
+	assert.Equal(t, errors[0].Errors[0], "Old password is incorrect")
+}
+
+func TestUserDomain_ChangeUserPassword_HashError(t *testing.T) {
+	domain := UserDomain{
+		store: &MockUserStoreMismatchedPassword{},
+	}
+	errors, err := domain.ChangeUserPassword(1, "password", "passwordisreallylongandxcv dsfvdsfvsfvsfzvzfddvdfvdwon'tcvdbdgbdfbdgfbdtvdefgbngjsdevghmxdffchgxfg")
+	assert.Nil(t, errors)
+	assert.NotNil(t, err)
+}
+
+type MockUserStoreGetError struct {
+	stores.UserStoreInterface
+	GetByIdCallCount int
+}
+
+func (m *MockUserStoreGetError) GetUserByID(id uint) (*stores.User, error) {
+	m.GetByIdCallCount++
+	if m.GetByIdCallCount == 1 {
+		hashedPassword, err := HashAndSalt("password")
+		if err != nil {
+			return nil, err
+		}
+		return &stores.User{
+			Name:     "Test User",
+			Email:    "test@email.com",
+			Password: hashedPassword,
+		}, nil
+	}
+	return nil, assert.AnError
+}
+
+func TestUserDomain_ChangeUserPassword_GetUserError(t *testing.T) {
+	domain := UserDomain{
+		store: &MockUserStoreGetError{},
+	}
+	errors, err := domain.ChangeUserPassword(1, "password", "newpassword")
+	assert.Nil(t, errors)
+	assert.NotNil(t, err)
+}
+
+type MockUserStoreUpdateError struct {
+	stores.UserStoreInterface
+}
+
+func (m *MockUserStoreUpdateError) GetUserByID(id uint) (*stores.User, error) {
+	hashedPassword, err := HashAndSalt("password")
+	if err != nil {
+		return nil, err
+	}
+	return &stores.User{
+		Name:     "Test User",
+		Email:    "test@email.com",
+		Password: hashedPassword,
+	}, nil
+}
+
+func (m *MockUserStoreUpdateError) UpdateUser(user *stores.User) ([]store.ModelValidationError, error) {
+	return nil, assert.AnError
+}
+
+func TestUserDomain_ChangeUserPassword_UpdateError(t *testing.T) {
+	domain := UserDomain{
+		store: &MockUserStoreUpdateError{},
+	}
+	errors, err := domain.ChangeUserPassword(1, "password", "newpassword")
+	assert.Nil(t, errors)
+	assert.NotNil(t, err)
+}
+
+type mockUserStoreUpdateValidationErrors struct {
+	MockUserStoreUpdateError
+}
+
+func (m *mockUserStoreUpdateValidationErrors) UpdateUser(user *stores.User) ([]store.ModelValidationError, error) {
+	return []store.ModelValidationError{
+		{
+			Field:   "password",
+			Message: "Password is required",
+		},
+	}, nil
+}
+
+func TestUserDomain_ChangeUserPassword_ValidationErrors(t *testing.T) {
+	domain := UserDomain{
+		store: &mockUserStoreUpdateValidationErrors{},
+	}
+	errors, err := domain.ChangeUserPassword(1, "password", "newpassword")
+	assert.NotEmpty(t, errors)
+	assert.Nil(t, err)
+	assert.Contains(t, errors[0].Field, "password")
+	assert.Contains(t, errors[0].Errors[0], "Password is required")
+}
+
+func TestUserDomain_ChangeUserPassword_Integration(t *testing.T) {
+	domain := UserDomain{
+		store: stores.NewUserStore(),
+	}
+	store.IsolatedIntegrationTest(t, []store.IntegrationTestStore{domain.store}, func(t *testing.T) {
+		user := UserForCreate{
+			Name:     "Test User",
+			Email:    "test@email.com",
+			Password: "password",
+		}
+		validationErrors, userData, err := domain.CreateUser(user)
+		assert.Nil(t, err)
+		assert.Empty(t, validationErrors)
+		assert.NotNil(t, userData)
+
+		errors, err := domain.ChangeUserPassword(userData.ID, "password", "newpassword")
+		assert.Nil(t, errors)
+		assert.Nil(t, err)
+
+		matches := domain.CheckPassword(userData.ID, "newpassword")
+		assert.True(t, matches)
+	})
+}
