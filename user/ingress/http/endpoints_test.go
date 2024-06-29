@@ -520,3 +520,114 @@ func TestUserHttpIngress_V1SignUp_Integration(t *testing.T) {
 		assert.NotEqual(t, uint(0), user.ID)
 	})
 }
+
+func TestUserHttpIngress_V1GetUser_Unauthenticated(t *testing.T) {
+	ingress := UserHttpIngress{
+		domain: &domain.UserDomain{},
+	}
+	EndpointIsAuthenticatedTest(t, ingress.V1GetUser)
+}
+
+type mockUserDomainNoUser struct {
+	domain.UserDomainInterface
+}
+
+func (m *mockUserDomainNoUser) GetUserByEmail(email string) (*domain.UserData, error) {
+	return nil, assert.AnError
+}
+
+func (m *mockUserDomainNoUser) ValidateRequestAuth(r http.Request) (*linesHttp.HttpError, *domain.JWTClaimsOut) {
+	return nil, &domain.JWTClaimsOut{
+		Email: "some@email.com",
+	}
+}
+
+func TestUserHttpIngress_V1GetUser_NoUser(t *testing.T) {
+	ingress := UserHttpIngress{
+		domain: &mockUserDomainNoUser{},
+	}
+	req, err := http.NewRequest("GET", "/user", nil)
+	assert.Nil(t, err)
+
+	rr := httptest.NewRecorder()
+	router := gin.Default()
+	router.GET("/user", ingress.V1GetUser)
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+	errors := linesHttp.HttpError{}
+	err = json.Unmarshal(rr.Body.Bytes(), &errors)
+	assert.Nil(t, err)
+	assert.Contains(t, errors.Message, "Unable to find user.")
+}
+
+type mockUserDomainSuccessGetUser struct {
+	domain.UserDomainInterface
+}
+
+func (m *mockUserDomainSuccessGetUser) GetUserByEmail(email string) (*domain.UserData, error) {
+	return &domain.UserData{
+		ID:    1,
+		Name:  "name",
+		Email: "email",
+	}, nil
+}
+
+func (m *mockUserDomainSuccessGetUser) ValidateRequestAuth(r http.Request) (*linesHttp.HttpError, *domain.JWTClaimsOut) {
+	return nil, &domain.JWTClaimsOut{
+		Email: "email",
+	}
+}
+
+func TestUserHttpIngress_V1GetUser_Success(t *testing.T) {
+	ingress := UserHttpIngress{
+		domain: &mockUserDomainSuccessGetUser{},
+	}
+	req, err := http.NewRequest("GET", "/user", nil)
+	assert.Nil(t, err)
+
+	rr := httptest.NewRecorder()
+	router := gin.Default()
+	router.GET("/user", ingress.V1GetUser)
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	user := UserReadDTO{}
+	err = json.Unmarshal(rr.Body.Bytes(), &user)
+	assert.Nil(t, err)
+	assert.Equal(t, uint(1), user.ID)
+	assert.Equal(t, "name", user.Name)
+	assert.Equal(t, "email", user.Email)
+}
+
+func TestUserHttpIngress_V1GetUser_Integration(t *testing.T) {
+	ingress := NewUserHttpIngress(nil)
+	store.IsolatedIntegrationTest(t, []store.IntegrationTestStore{ingress.domain}, func(t *testing.T) {
+		user := domain.UserForCreate{
+			Name:     "name",
+			Email:    "email@email.com",
+			Password: "password",
+		}
+		validationErrors, _, err := ingress.domain.CreateUser(user)
+		assert.Nil(t, validationErrors)
+		assert.Nil(t, err)
+
+		req, err := http.NewRequest("GET", "/user", nil)
+		assert.Nil(t, err)
+		err = AuthenticateRequest(req, user.Email)
+		assert.Nil(t, err)
+
+		rr := httptest.NewRecorder()
+		router := gin.Default()
+		router.GET("/user", ingress.V1GetUser)
+		router.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		userRead := UserReadDTO{}
+		err = json.Unmarshal(rr.Body.Bytes(), &userRead)
+		assert.Nil(t, err)
+		assert.Equal(t, "name", userRead.Name)
+		assert.Equal(t, "email@email.com", userRead.Email)
+		assert.NotEqual(t, uint(0), userRead.ID)
+	})
+}

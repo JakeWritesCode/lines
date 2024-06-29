@@ -128,3 +128,25 @@ func (i *UserHttpIngress) V1SignUp(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, userReadDTO)
 }
+
+func (i *UserHttpIngress) V1GetUser(c *gin.Context) {
+	authError, claims := i.domain.ValidateRequestAuth(*c.Request)
+	if authError != nil {
+		c.JSON(http.StatusUnauthorized, authError)
+		return
+	}
+
+	user, err := i.domain.GetUserByEmail(claims.Email)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, linesHttp.HttpError{Message: []string{"Unable to find user."}})
+		return
+	}
+
+	userReadDTO := UserReadDTO{
+		ID:    user.ID,
+		Email: user.Email,
+		Name:  user.Name,
+	}
+
+	c.JSON(http.StatusOK, userReadDTO)
+}
