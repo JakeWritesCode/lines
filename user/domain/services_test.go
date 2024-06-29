@@ -50,6 +50,22 @@ func TestUserDomain_CreateUser_ValidationErrors(t *testing.T) {
 	assert.Equal(t, domain.store.(*mockUserStore).CreateUserCalls, 0)
 }
 
+func TestUserDomain_CreateUser_UserExists(t *testing.T) {
+	domain := UserDomain{
+		store: &MockUserStoreUserExists{},
+	}
+	validationErrors, userData, err := domain.CreateUser(UserForCreate{
+		Name:     "name",
+		Email:    "email@email.com",
+		Password: "password",
+	})
+	assert.NotEmpty(t, validationErrors)
+	assert.Nil(t, userData)
+	assert.Nil(t, err)
+	assert.Equal(t, validationErrors[0].Field, "email")
+	assert.Equal(t, validationErrors[0].Errors[0], "Email is already in use.")
+}
+
 func TestUserDomain_CreateUser_HashError(t *testing.T) {
 	domain := UserDomain{
 		store: &mockUserStore{},

@@ -3,6 +3,7 @@ package http
 import (
 	"github.com/gin-gonic/gin"
 	linesHttp "lines/lines/http"
+	"lines/user/domain"
 	"net/http"
 	"time"
 )
@@ -88,4 +89,42 @@ func (i *UserHttpIngress) V1RefreshToken(c *gin.Context) {
 	)
 
 	c.JSON(http.StatusOK, newClaims)
+}
+
+func (i *UserHttpIngress) V1SignUp(c *gin.Context) {
+	var credentials UserSignUp
+	err := c.BindJSON(&credentials)
+	if err != nil {
+		httpErr := linesHttp.HttpError{Message: []string{err.Error()}}
+		c.JSON(http.StatusBadRequest, httpErr)
+		return
+	}
+	if httpErr := credentials.Validate(); len(httpErr.Message) > 0 {
+		c.JSON(http.StatusBadRequest, httpErr)
+		return
+	}
+
+	userForCreate := domain.UserForCreate{
+		Name:     credentials.Name,
+		Email:    credentials.Email,
+		Password: credentials.Password,
+	}
+
+	validationErrors, user, err := i.domain.CreateUser(userForCreate)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, linesHttp.HttpError{Message: []string{"Could not create user."}})
+		return
+	}
+	if len(validationErrors) > 0 {
+		c.JSON(http.StatusBadRequest, validationErrors)
+		return
+	}
+
+	userReadDTO := UserReadDTO{
+		ID:    user.ID,
+		Email: user.Email,
+		Name:  user.Name,
+	}
+
+	c.JSON(http.StatusCreated, userReadDTO)
 }

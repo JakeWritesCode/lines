@@ -30,6 +30,21 @@ func (u *UserDomain) CreateUser(user UserForCreate) ([]domain.DomainValidationEr
 	if len(validationErrors) > 0 {
 		return validationErrors, nil, nil
 	}
+
+	// Check if the user already exists.
+	existingUser, err := u.store.GetUserByEmail(user.Email)
+	if err != nil {
+		return nil, nil, err
+	}
+	if existingUser != nil {
+		return []domain.DomainValidationErrors{
+			{
+				Field:  "email",
+				Errors: []string{"Email already exists"},
+			},
+		}, nil, nil
+	}
+
 	hashed, err := HashAndSalt(user.Password)
 	if err != nil {
 		return nil, nil, errors.New("could not hash password")

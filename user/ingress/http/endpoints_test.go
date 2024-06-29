@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
+	domain2 "lines/lines/domain"
 	linesHttp "lines/lines/http"
 	"lines/lines/store"
 	"lines/user/domain"
@@ -352,4 +353,170 @@ func TestUserHttpIngress_V1RefreshToken_Success(t *testing.T) {
 	}
 	assert.NotNil(t, jwt.TokenString)
 	assert.NotEqual(t, token.TokenString, jwt.TokenString)
+}
+
+func TestUserHttpIngress_V1SignUp_BadRequest(t *testing.T) {
+	ingress := UserHttpIngress{}
+	req, err := http.NewRequest("POST", "/sign-up", nil)
+	assert.Nil(t, err)
+
+	rr := httptest.NewRecorder()
+	router := gin.Default()
+	router.POST("/sign-up", ingress.V1SignUp)
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+}
+
+func TestUserHttpIngress_V1SignUp_HttpValidationErrors(t *testing.T) {
+	ingress := UserHttpIngress{}
+	bodyCreds, err := json.Marshal(UserSignUp{})
+	assert.Nil(t, err)
+	req, err := http.NewRequest("POST", "/sign-up", strings.NewReader(string(bodyCreds)))
+	assert.Nil(t, err)
+
+	rr := httptest.NewRecorder()
+	router := gin.Default()
+	router.POST("/sign-up", ingress.V1SignUp)
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	errors := linesHttp.HttpError{}
+	err = json.Unmarshal(rr.Body.Bytes(), &errors)
+	assert.Nil(t, err)
+	assert.Contains(t, errors.Message, "Name is required.")
+	assert.Contains(t, errors.Message, "Email is required.")
+	assert.Contains(t, errors.Message, "Password is required.")
+}
+
+type mockUserDomainUserCreateError struct {
+	domain.UserDomainInterface
+}
+
+func (m *mockUserDomainUserCreateError) CreateUser(user domain.UserForCreate) ([]domain2.DomainValidationErrors, *domain.UserData, error) {
+	return []domain2.DomainValidationErrors{}, nil, assert.AnError
+}
+
+func TestUserHttpIngress_V1SignUp_UserCreateError(t *testing.T) {
+	ingress := UserHttpIngress{
+		domain: &mockUserDomainUserCreateError{},
+	}
+	bodyCreds, err := json.Marshal(UserSignUp{
+		Name:     "name",
+		Email:    "email",
+		Password: "password",
+	})
+	assert.Nil(t, err)
+	req, err := http.NewRequest("POST", "/sign-up", strings.NewReader(string(bodyCreds)))
+	assert.Nil(t, err)
+
+	rr := httptest.NewRecorder()
+	router := gin.Default()
+	router.POST("/sign-up", ingress.V1SignUp)
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+	errors := linesHttp.HttpError{}
+	err = json.Unmarshal(rr.Body.Bytes(), &errors)
+	assert.Nil(t, err)
+	assert.Contains(t, errors.Message, "Could not create user.")
+}
+
+type mockUserDomainUserCreateValidationErrors struct {
+	domain.UserDomainInterface
+}
+
+func (m *mockUserDomainUserCreateValidationErrors) CreateUser(user domain.UserForCreate) ([]domain2.DomainValidationErrors, *domain.UserData, error) {
+	return []domain2.DomainValidationErrors{{"name", []string{"error"}}}, nil, nil
+}
+
+func TestUserHttpIngress_V1SignUp_DomainValidationErrors(t *testing.T) {
+	ingress := UserHttpIngress{
+		domain: &mockUserDomainUserCreateValidationErrors{},
+	}
+	bodyCreds, err := json.Marshal(UserSignUp{
+		Name:     "name",
+		Email:    "email",
+		Password: "password",
+	})
+	assert.Nil(t, err)
+	req, err := http.NewRequest("POST", "/sign-up", strings.NewReader(string(bodyCreds)))
+	assert.Nil(t, err)
+
+	rr := httptest.NewRecorder()
+	router := gin.Default()
+	router.POST("/sign-up", ingress.V1SignUp)
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	var errors []domain2.DomainValidationErrors
+	err = json.Unmarshal(rr.Body.Bytes(), &errors)
+	assert.Nil(t, err)
+	assert.Contains(t, errors[0].Errors, "error")
+}
+
+type mockUserDomainUserCreateSuccess struct {
+	domain.UserDomainInterface
+}
+
+func (m *mockUserDomainUserCreateSuccess) CreateUser(user domain.UserForCreate) ([]domain2.DomainValidationErrors, *domain.UserData, error) {
+	return []domain2.DomainValidationErrors{}, &domain.UserData{
+		ID:    1,
+		Name:  "name",
+		Email: "email",
+	}, nil
+}
+
+func TestUserHttpIngress_V1SignUp_Success(t *testing.T) {
+	ingress := UserHttpIngress{
+		domain: &mockUserDomainUserCreateSuccess{},
+	}
+	bodyCreds, err := json.Marshal(UserSignUp{
+		Name:     "name",
+		Email:    "email",
+		Password: "password",
+	})
+	assert.Nil(t, err)
+	req, err := http.NewRequest("POST", "/sign-up", strings.NewReader(string(bodyCreds)))
+	assert.Nil(t, err)
+
+	rr := httptest.NewRecorder()
+	router := gin.Default()
+	router.POST("/sign-up", ingress.V1SignUp)
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusCreated, rr.Code)
+	user := UserReadDTO{}
+	err = json.Unmarshal(rr.Body.Bytes(), &user)
+	assert.Nil(t, err)
+	assert.Equal(t, uint(1), user.ID)
+	assert.Equal(t, "name", user.Name)
+	assert.Equal(t, "email", user.Email)
+}
+
+func TestUserHttpIngress_V1SignUp_Integration(t *testing.T) {
+	ingress := NewUserHttpIngress(nil)
+	store.IsolatedIntegrationTest(t, []store.IntegrationTestStore{ingress.domain}, func(t *testing.T) {
+		body, err := json.Marshal(UserSignUp{
+			Name:     "name",
+			Email:    "email@email.com",
+			Password: "password",
+		})
+		assert.Nil(t, err)
+		req, err := http.NewRequest("POST", "/sign-up", strings.NewReader(string(body)))
+		assert.Nil(t, err)
+
+		rr := httptest.NewRecorder()
+		router := gin.Default()
+		router.POST("/sign-up", ingress.V1SignUp)
+		router.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusCreated, rr.Code)
+		user := UserReadDTO{}
+		err = json.Unmarshal(rr.Body.Bytes(), &user)
+		assert.Nil(t, err)
+		assert.Equal(t, "name", user.Name)
+		assert.Equal(t, "email@email.com", user.Email)
+		assert.NotEqual(t, uint(0), user.ID)
+	})
 }
