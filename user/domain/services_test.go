@@ -35,6 +35,31 @@ func (m *mockUserStore) CreateUser(user *stores.User) ([]store.ModelValidationEr
 	return nil, nil
 }
 
+func TestUserDomain_CreateUser_ValidationError(t *testing.T) {
+	domain := UserDomain{
+		store: &mockUserStore{},
+	}
+	validationErrors, userData, err := domain.CreateUser(UserForCreate{})
+	assert.NotEmpty(t, validationErrors)
+	assert.Nil(t, userData)
+	assert.Nil(t, err)
+	assert.Equal(t, domain.store.(*mockUserStore).CreateUserCalls, 0)
+}
+
+func TestUserDomain_CreateUser_UserGetError(t *testing.T) {
+	domain := UserDomain{
+		store: &MockUserStoreGetError{},
+	}
+	validationErrors, userData, err := domain.CreateUser(UserForCreate{
+		Name:     "name",
+		Email:    "email@email.com",
+		Password: "password",
+	})
+	assert.Nil(t, validationErrors)
+	assert.Nil(t, userData)
+	assert.NotNil(t, err)
+}
+
 func (m *mockUserStore) GetUserByEmail(email string) (*stores.User, error) {
 	return nil, nil
 }
@@ -521,6 +546,10 @@ func (m *MockUserStoreGetError) GetUserByID(id uint) (*stores.User, error) {
 			Password: hashedPassword,
 		}, nil
 	}
+	return nil, assert.AnError
+}
+
+func (m *MockUserStoreGetError) GetUserByEmail(email string) (*stores.User, error) {
 	return nil, assert.AnError
 }
 

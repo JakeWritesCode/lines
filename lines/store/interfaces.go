@@ -28,9 +28,6 @@ type PostgresStore struct {
 }
 
 func (s *PostgresStore) BeginTransaction() error {
-	if !s.Config.TestRunner {
-		return errors.New("cannot start transaction in non-test environment")
-	}
 	s.Postgres = s.Postgres.Begin()
 	return nil
 }

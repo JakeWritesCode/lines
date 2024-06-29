@@ -43,6 +43,7 @@ func CreatePostgresDB(config PostgresDBConfig, models []PostgresModel) *gorm.DB 
 			"CreatePostgresDB",
 			fmt.Sprintf("Failed to connect to the database: %v", err),
 		)
+		return nil
 	}
 	for _, model := range models {
 		err = db.AutoMigrate(model)
