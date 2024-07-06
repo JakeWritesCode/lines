@@ -34,3 +34,25 @@ building a production grade app:
 - Containerisation, for easy deployment.
 - An admin console, for administering the app.
 - All the boring boilerplate for creating endpoints, serialisers etc that Django does for you.
+
+
+# Getting Started
+To get started, you'll need to have a few things installed on your machine:
+- Docker
+- Postgres
+- Go
+
+
+# Environment Variables
+The following environment variables are required to run the app:
+- `LOCAL_DEV` - Set to `true` if you're running the app locally, `false` otherwise.
+- `TEST_RUNNER` - Set to `true` if you're running tests, `false` otherwise.
+- `USE_SSL` - Set to `true` if you're using SSL, `false` otherwise.
+- `SITE_DOMAIN` - The domain of the site.
+- `LOG_LEVEL` - The log level of the app.
+- `CORS_ORIGINS` - A comma separated list of origins that are allowed to make requests to the app.
+- `SENTRY_DSN` - The DSN for Sentry.
+- `HTTP_PORT` - The port the app will run on.
+- `SECRET_KEY` - The secret key for the app.
+- `TOKEN_EXPIRATION_TIME_MINUTES` - The time in minutes that a token will last for.
+- `USER_POSTGRES_URL` - The URL for the user postgres database.
